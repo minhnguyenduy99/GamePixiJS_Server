@@ -1,1 +1,1 @@
-web: gunicorn pixijsserver.wsgi
+web: gunicorn django_rest.wsgi
