@@ -1,0 +1,7 @@
+{
+  "python.pythonPath": "Scripts\\python.exe",
+  "php.suggest.basic": false,
+  "php.validate.enable": false,
+  "javascript.format.insertSpaceAfterCommaDelimiter": false,
+  "javascript.format.enable": false
+}
