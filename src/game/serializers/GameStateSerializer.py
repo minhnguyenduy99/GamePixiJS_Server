@@ -10,7 +10,7 @@ class GameStateSerializer(serializers.ModelSerializer):
 
 
 class RetrieveGameStateSerializer(serializers.ModelSerializer):
-  game_map = MapSerializer(read_only=True)
+  game_map = MapSerializer(read_only=True, default=None)
 
   class Meta:
     model = GameState
