@@ -15,3 +15,12 @@ class RetrieveGameStateSerializer(serializers.ModelSerializer):
   class Meta:
     model = GameState
     fields = '__all__'
+
+
+
+class GameStateMapSerializer(serializers.ModelSerializer):
+  game_state = GameStateSerializer(default=None, required=False)
+
+  class Meta:
+    model=Map
+    fields = '__all__'
