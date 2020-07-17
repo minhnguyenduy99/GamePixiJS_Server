@@ -38,9 +38,6 @@ class GameStateViewSet(viewsets.ModelViewSet):
     page = request.query_params.get('page', 1)
     page = int(page)
     offset = (page - 1) * self.page_size
-    # states = self.get_queryset()
-    # serializer = self.get_serializer_class()(states, many=True)
-    # return Response(serializer.data, status=status.HTTP_200_OK)
     listMaps = Map.objects.all()[offset:self.page_size]
     for map in listMaps:
       state = self.get_queryset().filter(game_map=map.id)[:1]
@@ -49,6 +46,19 @@ class GameStateViewSet(viewsets.ModelViewSet):
       else:
         map.game_state = state[0]
     return Response(GameStateMapSerializer(instance=listMaps, many=True).data, status=status.HTTP_200_OK)
+
+
+  def retrieve(self, request, pk=None):
+    try:
+      map = Map.objects.get(id=pk)
+    except Map.DoesNotExist:
+      return Response(status=status.HTTP_404_NOT_FOUND)
+      state = self.get_queryset().filter(game_map=map.id)[:1]
+      if len(state) == 0:
+        map.game_state = None
+      else:
+        map.game_state = state[0]
+    return Response(GameStateMapSerializer(instance=map).data, status=status.HTTP_200_OK)
 
 
   @action(detail=True, methods=['put'])
