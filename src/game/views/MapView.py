@@ -16,7 +16,7 @@ class MapViewSet(viewsets.ModelViewSet):
   serializer_class = MapSerializer
   pagination_class = SmallPagination
   authentication_classes = [TokenAuthentication]
-  permission_classes = [IsAuthenticated, UserPermission]
+  permission_classes = [IsAuthenticated]
 
   def perform_create(self, serializer):
     serializer.save(created_by=self.request.auth.user.id)
