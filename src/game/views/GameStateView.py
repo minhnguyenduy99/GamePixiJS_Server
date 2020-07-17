@@ -11,7 +11,7 @@ from rest_framework.authentication import TokenAuthentication
 class GameStateViewSet(viewsets.ModelViewSet):
   queryset = GameState.objects.all()
   authentication_classes = [TokenAuthentication]
-  permission_classes = [IsAuthenticated, UserPermission]
+  permission_classes = [IsAuthenticated]
   page_size = 6
 
   def get_permissions(self):
