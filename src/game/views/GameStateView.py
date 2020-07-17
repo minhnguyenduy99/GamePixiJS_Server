@@ -12,7 +12,7 @@ class GameStateViewSet(viewsets.ModelViewSet):
   queryset = GameState.objects.all()
   authentication_classes = [TokenAuthentication]
   permission_classes = [IsAuthenticated, UserPermission]
-  page_size = 2
+  page_size = 6
 
   def get_permissions(self):
     if self.action == 'create':
@@ -36,6 +36,7 @@ class GameStateViewSet(viewsets.ModelViewSet):
   @action(detail=False, methods=['get'])
   def by_user(self, request, pk=None):
     page = request.query_params.get('page', 1)
+    page = int(page)
     offset = (page - 1) * self.page_size
     # states = self.get_queryset()
     # serializer = self.get_serializer_class()(states, many=True)
