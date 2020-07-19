@@ -1,1 +1,1 @@
-from .FileUploader import FileUploader
+from .FileUploader import *

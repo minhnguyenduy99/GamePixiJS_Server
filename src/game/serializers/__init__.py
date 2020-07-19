@@ -1,5 +1,4 @@
-from .UserSerializer import UserSerializer, UpdateUserSerializer, User
+from .UserSerializer import UserSerializer, UpdateUserSerializer, CreateUserSerializer, User
 from .ProfileSerializer import ProfileSerializer, Profile
-from .UserProfileSerializer import CreateUserProfileSerializer, RetrieveUserProfileSerializer
 from .MapSerializer import MapSerializer, Map
-from .GameStateSerializer import GameStateSerializer, GameState, RetrieveGameStateSerializer, GameStateMapSerializer
+from .GameStateSerializer import GameStateSerializer, RetrieveGameStateSerializer, GameState

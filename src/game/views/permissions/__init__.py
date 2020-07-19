@@ -1,1 +1,0 @@
-from .UserPermission import UserPermission

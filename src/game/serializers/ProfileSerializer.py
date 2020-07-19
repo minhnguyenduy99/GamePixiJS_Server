@@ -4,5 +4,5 @@ from ..models import Profile
 class ProfileSerializer(serializers.ModelSerializer):
   class Meta:
     model = Profile
-    exclude = ['user']
+    fields = '__all__'
     read_only_fields = ['id', 'social_id']

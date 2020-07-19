@@ -3,62 +3,74 @@ from rest_framework.response import Response
 from rest_framework.authentication import BasicAuthentication, TokenAuthentication
 from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
 from rest_framework.parsers import JSONParser
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, SAFE_METHODS
 from rest_framework.filters import OrderingFilter
 from rest_framework.decorators import action
 from ..serializers import MapSerializer, Map
-from .permissions import UserPermission
 from .pagination import SmallPagination
+from ..permissions import MapOwnerPermission
 from ..services import FileUploader
+
 
 class MapViewSet(viewsets.ModelViewSet):
   queryset = Map.objects.all().order_by('-last_edited')
   serializer_class = MapSerializer
   pagination_class = SmallPagination
-  authentication_classes = [TokenAuthentication]
-  permission_classes = [IsAuthenticated]
+  permission_classes = [IsAuthenticatedOrReadOnly, MapOwnerPermission]
 
-  def perform_create(self, serializer):
-    serializer.save(created_by=self.request.auth.user.id)
+  def get_permissions(self):
+    if self.request.method in ('POST',) + SAFE_METHODS:
+      return [IsAuthenticatedOrReadOnly()]
+    return [permission() for permission in self.permission_classes]
 
 
   def create(self, request):
-    map_image = request.data.get('map_image', None)
-    map_file = request.data.get('map_file', None)
-    if map_file is None or map_image is None:
-      data = {
-        'error': 'Image and map file are required'
-      }
-      return Response(JSONParser().parse(data) ,status=status.HTTP_400_BAD_REQUEST)
-    results = [FileUploader.uploadFile(file) for file in (map_image, map_file)]
-    if results[0] is None or results[1] is None:
-      return Response(status=status.HTTP_400_BAD_REQUEST)
-    request.data['map_image'] = results[0]
-    request.data['map_file'] = results[1]
+    self.create_map_and_image_file(request)
+    request.data['created_by'] = request.user.id
     mapSerializer = self.get_serializer_class()(data=request.data, many=False)
     if mapSerializer.is_valid():
-      mapSerializer.save(created_by=self.request.auth.user.id)
+      mapSerializer.save()
       return Response(mapSerializer.data, status=status.HTTP_201_CREATED)
+    # delete the uploaded files
+    FileUploader.deleteFile(request.data['map_image_id'])
+    FileUploader.deleteFile(request.data['map_file_id'])
     return Response(mapSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
   def update(self, request, pk=None):
-    map_image = request.data.get('map_image', None)
-    map_file = request.data.get('map_file', None)
-    if map_file is None or map_image is None:
-      data = {
-        'error': 'Image and map file are required'
-      }
-      return Response(JSONParser().parse(data) ,status=status.HTTP_400_BAD_REQUEST)
-    results = [FileUploader.uploadFile(file) for file in (map_image, map_file)]
-    if results[0] is None or results[1] is None:
-      return Response(status=status.HTTP_400_BAD_REQUEST)
-    request.data['map_image'] = results[0]
-    request.data['map_file'] = results[1]
-    mapSerializer = self.get_serializer_class()(instance = self.get_object(), data=request.data)
+    map = self.get_object()
+    self.create_map_and_image_file(request)
+    request.data['created_by'] = map.created_by
+    mapSerializer = self.get_serializer_class()(instance = map, data=request.data)
     if mapSerializer.is_valid():
       mapSerializer.save()
       return Response(mapSerializer.data, status=status.HTTP_200_OK)
+    # delete the uploaded files
+    FileUploader.deleteFile(request.data['map_image_id'])
+    FileUploader.deleteFile(request.data['map_file_id'])
     return Response(mapSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+  def create_map_and_image_file(self, request):
+    image = self.create_file(request, 'map_image', 'map_image_id', 'map_image_url', 'map_image is required')
+    file = self.create_file(request, 'map_file', 'map_file_id', 'map_file_url', 'map_file is required')
 
+    data = request.data
+    data.update(file)
+    data.update(image)
+
+
+  def create_file(self, request, requestField, idField, urlField, error = None):
+    file = request.data.get(requestField, None)
+    if file is None:
+      data = {
+        'error': error
+      }
+      return Response(JSONParser().parse(data) ,status=status.HTTP_400_BAD_REQUEST)
+    result = FileUploader.uploadFile(file)
+    returnedResult = {}
+    returnedResult[idField] = result['id']
+    returnedResult[urlField] = result['url']
+    return returnedResult
+
+  def delete_file(self, request, request_field, id_field):
+    FileUploader.deleteFile()

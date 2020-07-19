@@ -1,27 +1,41 @@
 from rest_framework.serializers import *
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
+from .ProfileSerializer import ProfileSerializer
+from ..models import Profile
 
 
 class UserSerializer(ModelSerializer):
-  token = SerializerMethodField()
+  profile = ProfileSerializer()
 
   class Meta:
     model = User
-    fields = ['id', 'username', 'password', 'email', 'token']
+    fields = ['id', 'username', 'password', 'email', 'profile']
     extra_kwargs = {'password': {'write_only': True}}
 
-  def get_token(self, obj):
-    token = Token.objects.get(user=obj.id)
-    return token.key
+  def get_profile(self, obj):
+    profile = Profile.objects.filter(user=obj.id).first()
+    return profile
 
+
+class CreateUserSerializer(ModelSerializer):
+  class Meta:
+    model = User
+    fields = ['id', 'username', 'password', 'email']
+    extra_kwargs = {'password': {'write_only': True}}
+
+  def save(self):
+    user = super().save()
+    user.set_password(user.password)
+    user.save()
+    return user
 
 
 class UpdateUserSerializer(ModelSerializer):
 
   class Meta:
     model = User
-    fields = ['id', 'username', 'password', 'email']
+    fields = ['id']
     extra_kwargs = {'password': {'write_only': True}}
     read_only_fields = ['id', 'email']
 

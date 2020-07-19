@@ -15,5 +15,7 @@ class GameState(models.Model):
   game_map = models.ForeignKey(Map, on_delete=models.CASCADE)
   user = models.ForeignKey(User, on_delete=models.CASCADE)
   saved_date = models.DateField(auto_now=True)
-  created_by = models.CharField(max_length=200)
   state = models.CharField(max_length=20, choices=STATE_CHOICES, default=NOTARCHIEVED)
+
+  class Meta:
+    unique_together = ('user', 'game_map',)

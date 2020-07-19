@@ -20,6 +20,5 @@ from django.conf import settings
 from game import urls
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('', include(urls.router.urls))
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('admin/', admin.site.urls)
+] + urls.urlpatterns + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
