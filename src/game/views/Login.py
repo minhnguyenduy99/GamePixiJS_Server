@@ -10,30 +10,32 @@ from .TokenView import generate_access_token, generate_refresh_token
 @api_view(['POST'])
 @authentication_classes([])
 @permission_classes([AllowAny])
-@ensure_csrf_cookie
 def login(request):
-  username = request.data.get('username', None)
-  password = request.data.get('password', None)
+  try:
+    username = request.data.get('username', None)
+    password = request.data.get('password', None)
 
-  user = User.objects.filter(username=username).first()
-  if user is None:
-    raise exceptions.AuthenticationFailed(detail='The username or password is incorrect')   
-  passwordCorrect = user.check_password(password)
-  if not passwordCorrect:
-    raise exceptions.AuthenticationFailed(detail='The username or password is incorrect')
-  
-  user_serializer = UserSerializer(instance=user, many=False).data
-  access_token = generate_access_token(user)
-  refresh_token = generate_refresh_token(user)
+    user = User.objects.filter(username=username).first()
+    if user is None:
+      raise exceptions.AuthenticationFailed(detail='The username or password is incorrect')   
+    passwordCorrect = user.check_password(password)
+    if not passwordCorrect:
+      raise exceptions.AuthenticationFailed(detail='The username or password is incorrect')
+    
+    user_serializer = UserSerializer(instance=user, many=False).data
+    access_token = generate_access_token(user)
+    refresh_token = generate_refresh_token(user)
 
-  response = Response()
+    response = Response()
 
-  response.set_cookie(key='refresh_token', value=refresh_token, httponly=True)
-  response.data = {
-    'access_token': access_token,
-    'user': user_serializer
-  }
-  response.status_code = status.HTTP_200_OK
-  return response
+    response.set_cookie(key='refresh_token', value=refresh_token, httponly=True)
+    response.data = {
+      'access_token': access_token,
+      'user': user_serializer
+    }
+    response.status_code = status.HTTP_200_OK
+    return response
+  except Exception as e: 
+    print(e)
 
 
