@@ -35,7 +35,7 @@ def login(request):
     }
     response.status_code = status.HTTP_200_OK
     return response
-  except Exception as e: 
-    print(str(e))
+  except:
+    print('Some error in login')
 
 
