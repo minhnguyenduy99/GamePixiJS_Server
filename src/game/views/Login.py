@@ -6,6 +6,8 @@ from rest_framework import status
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_protect
 from ..serializers import UserSerializer, User
 from .TokenView import generate_access_token, generate_refresh_token
+import logging
+import traceback  
 
 @api_view(['POST'])
 @authentication_classes([])
@@ -35,7 +37,7 @@ def login(request):
     }
     response.status_code = status.HTTP_200_OK
     return response
-  except Exception e:
-    print(str(e))
+  except:
+    logging.error(traceback.format_exc())
 
 
