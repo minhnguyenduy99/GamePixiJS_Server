@@ -15,13 +15,19 @@ from ..services import FileUploader
 class MapViewSet(viewsets.ModelViewSet):
   queryset = Map.objects.all().order_by('-last_edited')
   serializer_class = MapSerializer
-  pagination_class = SmallPagination
   permission_classes = [IsAuthenticatedOrReadOnly, MapOwnerPermission]
+  pagination_class = SmallPagination
+  pagination_class.page_size = 3
 
   def get_permissions(self):
     if self.request.method in ('POST',) + SAFE_METHODS:
       return [IsAuthenticatedOrReadOnly()]
     return [permission() for permission in self.permission_classes]
+
+  def get_queryset(self):
+    if self.action in ['retrieve', 'list']:
+      self.queryset = self.queryset.filter(created_by=self.request.user.id)
+    return self.queryset
 
 
   def create(self, request):

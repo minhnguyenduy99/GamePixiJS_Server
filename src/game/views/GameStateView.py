@@ -18,6 +18,7 @@ class GameStateViewSet(viewsets.ModelViewSet):
   permission_classes = [IsAuthenticated, GameStateOwnPermission]
   pagination_class = SmallPagination
   pagination_class.page_size = 6
+  page_size = 6
 
   def get_serializer_class(self):
     if self.request.method in SAFE_METHODS:
@@ -33,6 +34,7 @@ class GameStateViewSet(viewsets.ModelViewSet):
 
   def get_queryset(self):
     user_id = self.request.user.id
+    self.queryset = Map.objects.all()
     self.queryset = GameState.objects.filter(user=user_id).order_by('-saved_date')
     return self.queryset
 
@@ -50,6 +52,19 @@ class GameStateViewSet(viewsets.ModelViewSet):
       raise NotFound('The map is not found')
     return map
 
+  def list(self, request):
+    page = request.query_params.get('page', '1')
+    page = int(page)
+    list_maps = Map.objects.all()[(page - 1) * self.page_size:self.page_size]
+    list_game_state = []
+    for map in list_maps:
+      game_state, created = GameState.objects.get_or_create(user=request.user, game_map=map)
+      if created:
+        print('Create new')
+      list_game_state.append(game_state)
+    serializer = self.get_serializer_class()(instance=list_game_state, many=True)
+    return Response(data=serializer.data)
+    
   
   def create(self, request):
     user = self.get_user()

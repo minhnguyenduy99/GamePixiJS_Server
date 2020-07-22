@@ -60,7 +60,8 @@ class UserViewSet(
     serialized_user = self.get_serializer_class()(data=request.data)
     
     if not serialized_user.is_valid():
-      return Response(serialized_user.errors, status=status.HTTP_400_BAD_REQUEST)
+      error = [serialized_user.errors[key][0] for key in serialized_user.errors]
+      return Response({ 'error': error[0] }, status=status.HTTP_400_BAD_REQUEST)
     user = serialized_user.save()
     
     # Create profile of user
@@ -72,7 +73,8 @@ class UserViewSet(
     serialized_profile = ProfileSerializer(data=profile_data)
     if not serialized_profile.is_valid():
       user.delete()
-      return Response(serialized_profile.errors, status=status.HTTP_400_BAD_REQUEST)
+      error = [serialized_profile.errors[key][0] for key in serialized_profile.errors]
+      return Response({ 'error': error[0] }, status=status.HTTP_400_BAD_REQUEST)
 
     serialized_profile.save()
     token = {
@@ -85,39 +87,19 @@ class UserViewSet(
     return Response(data=data, status=status.HTTP_201_CREATED)
 
 
-  @action(detail=False, methods=['POST'], url_path='/social/', permission_classes=[])
-  def create_by_social(self, request):
-    try:
-      # If the user already exists
-      profile = Profile.objects.get(social_id=request.data.get('social_id'))
-      profileSerializer = RetrieveUserProfileSerializer(instance=profile, many=False)
-      return Response(profileSerializer.data, status=status.HTTP_200_OK)
-    except Profile.DoesNotExist:
-      # Else
-      success, dataOrError = self.transformAccountData(request.data)
-      if success is not True:
-        error = {
-          'errors': dataOrError.args 
-        }
-        return Response(error, status=status.HTTP_400_BAD_REQUEST, content_type='application/json')
-      serializer = CreateUserProfileSerializer(data=dataOrError)
-      if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-      return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-  # @action(detail=True, methods=['PUT'])
-  # def update(self, request, pk=None):
-  #   user = User.objects.filter(profile__id=pk).first()
-  #   if user is None:
-  #     return Response(status=status.HTTP_404_NOT_FOUND)
-  #   user = queryset[0]
-  #   userSerializer = self.get_serializer_class()(instance=user, data=request.data, partial=True)
-  #   if userSerializer.is_valid():
-  #     userSerializer.save()
-  #     return Response(userSerializer.data, status=status.HTTP_200_OK)
-  #   return Response(userSerializer.errors, status=status.HTTP_400_BAD_REQUEST)
+  def get_social_user(self, request):
+    # If the user already exists
+    profile = Profile.objects.get(social_id=request.data.get('social_id'))
+    user = User.objects.get(id=profile.user.id)
+    user_data = UserSerializer(instance=user).data
+    profile_data = ProfileSerializer(instance=profile).data
+    user_data['profile'] = profile_data
+    token = {
+      'access_token': generate_access_token(user),
+      'refresh_token': generate_refresh_token(user)
+    }
+    data['token'] = token
+    return data
 
 
   @action(detail=True, methods=['PUT'], url_path='profile')
@@ -130,16 +112,3 @@ class UserViewSet(
       serialized_profile.save()
       return Response(serialized_profile.data, status=status.HTTP_200_OK)
     return Response(serialized_profile.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-  def transformAccountData(self, data):
-    user = data.get('user')
-    if user is None:
-      return False, ValueError('User cannot be null')
-    user['username'] = data['social_id']
-    email = user.get('email')
-    if email is None:
-      user['password'] = str(uuid.uuid1())
-    else:
-      user['password'] = email + str(uuid.uuid1())
-    return True, data

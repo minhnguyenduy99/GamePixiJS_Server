@@ -1,3 +1,4 @@
+import uuid
 from rest_framework.serializers import *
 from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
@@ -31,11 +32,25 @@ class CreateUserSerializer(ModelSerializer):
     return user
 
 
+class CreateUserFromSocialSerializer(ModelSerializer):
+  class Meta:
+    model = User
+    fields = ['id']
+
+  def __init__(self, *args, **kwargs):
+    super().__init__(*args, **kwargs)
+    data = kwargs['data']
+    if data is None:
+      return
+    data['username'] = uuid.uuid1()
+    data['password'] = uuid.uuid1()
+
+
 class UpdateUserSerializer(ModelSerializer):
 
   class Meta:
     model = User
-    fields = ['id']
+    fields = ['id', 'username', 'password']
     extra_kwargs = {'password': {'write_only': True}}
     read_only_fields = ['id', 'email']
 
@@ -43,6 +58,7 @@ class UpdateUserSerializer(ModelSerializer):
     return value
 
   def update(self, instance, validated_data):
+    self.is_valid()
     instance.username = validated_data.get('username', instance.username)
     password = validated_data.get('password')
     if password is not None:
